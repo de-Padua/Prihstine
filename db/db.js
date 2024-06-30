@@ -1,14 +1,21 @@
-// db.js
-require('dotenv').config();
-const { Sequelize } = require('sequelize');
 
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
-  dialect: 'postgres',
-  host: process.env.DATABASE_HOST,
-  port: process.env.DATABASE_PORT,
-  username: process.env.DATABASE_USER,
-  password: process.env.DATABASE_PASSWORD,
-});
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient()
 
-module.exports = sequelize;
+async function db() {
+    // ... you will write your Prisma Client queries here
+}
 
+db()
+    .then(async () => {
+        await prisma.$disconnect()
+    })
+    .catch(async (e) => {
+        console.error(e)
+        await prisma.$disconnect()
+        process.exit(1)
+    })
+
+
+
+module.exports = prisma
