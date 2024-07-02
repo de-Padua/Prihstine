@@ -5,7 +5,8 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -14,8 +15,33 @@ datasource db {
 }
 
 model User {
-  id        Int    @id @default(autoincrement())
+  id        String @id @default(uuid())
   email     String @unique
   firstName String
   lastName  String
+  phone     Int
+  posts     Post[]
+}
+
+model Post {
+  user               User      @relation(fields: [userId], references: [id])
+  userId             String
+  postId             String    @id @default(uuid())
+  postTitle          String
+  postDescrition     String
+  postValue          Int
+  updatedAt          DateTime  @default(now()) @updatedAt
+  adress             String
+  state              String
+  cep                String
+  sizeInSquareMeters String
+  isClosed           Boolean   @default(false)
+  pictures           Picture[]
+}
+
+model Picture {
+  post       Post   @relation(fields: [postPostId], references: [postId])
+  postPostId String
+  pictureId  String @id @default(uuid())
+  pictureUrl String
 }
