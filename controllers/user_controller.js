@@ -1,7 +1,5 @@
-const { json } = require("stream/consumers");
 const headerValidation = require("../helpers/headerValitation");
 const logger = require("../helpers/logger");
-const { error } = require("console");
 
 const userController = {
   createNewUser: async (req, res) => {
@@ -13,7 +11,6 @@ const userController = {
         res.status(parseInt(validation.status)).end();
       } else {
         logger({ req, validation });
-
         res.status(parseInt(validation.status)).json({ data: "test" }).end();
       }
     } catch (error) {
