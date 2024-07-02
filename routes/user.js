@@ -1,13 +1,10 @@
 const app = require("express")
 const route = app.Router()
-const userController = require("../controllers/user_controller")
+const UserController = require("../controllers/user_controller")
 
 
 
-route.get("/user",userController.getUserData)
-
-
-
+route.post("/user", UserController.createNewUser)
 
 
 
