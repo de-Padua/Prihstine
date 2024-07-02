@@ -1,12 +1,26 @@
+const { json } = require("stream/consumers");
+const headerValidation = require("../helpers/headerValitation");
+const logger = require("../helpers/logger");
+const { error } = require("console");
+
 const userController = {
+  createNewUser: async (req, res) => {
+    try {
+      
+      const validation = headerValidation(req.headers);
+      if (validation.sucess === false) {
+        logger({ req, validation }, { failedAt: "user creation" });
+        res.status(parseInt(validation.status)).end();
+      } else {
+        logger({ req, validation });
 
-   getUserData : (req,res) =>{
-     return res.json({data:"is working"})
-   }
-
+        res.status(parseInt(validation.status)).json({ data: "test" }).end();
+      }
+    } catch (error) {
+      logger({}, { error: error });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
 };
 
-
-
-
-module.exports = userController
+module.exports = userController;
