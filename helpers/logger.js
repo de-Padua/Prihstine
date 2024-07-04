@@ -2,7 +2,7 @@ const fsP = require("fs/promises");
 const fs = require("node:fs");
 const path = require("path");
 
-const logger = async ({ req, validation }, ...args) => {
+const logger = async (...actions) => {
   const currentDate = new Date();
 
   const year = currentDate.getFullYear();
@@ -14,11 +14,8 @@ const logger = async ({ req, validation }, ...args) => {
   const folderName = "./logs";
 
   const objectToLog = {
-    header: req.headers,
-    validation: validation,
     date: new Date().toISOString(),
-    info:args[0]
-    
+    data:actions[0] || []
   };
 
   
@@ -31,7 +28,7 @@ const logger = async ({ req, validation }, ...args) => {
     }
 
     await fsP.appendFile(
-      path.join("./", "logs", formattedDate.toString() + ".txt"),
+      path.join("./", "logs", formattedDate.toString() + ".log"),
       `${JSON.stringify(objectToLog)}\n`
     );
   } catch (err) {
