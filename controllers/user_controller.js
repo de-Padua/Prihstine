@@ -2,6 +2,7 @@ const headerValidation = require("../helpers/headerValitation");
 const logger = require("../helpers/logger");
 const _db = require("../db/db");
 const bodyValidation = require("../helpers/bodyValidation");
+var bcrypt = require("bcryptjs");
 
 const userController = {
   createNewUser: async (req, res) => {
@@ -17,7 +18,7 @@ const userController = {
         "posts",
         "phone",
         "firstName",
-        "lastName"
+        "lastName",
       ]);
 
       if (bodyValidationErrors) {
@@ -34,20 +35,21 @@ const userController = {
         return res.status(409).end();
       }
 
+      const hash = bcrypt.hashSync(req.body.password, 4);
+
       const newUser = await _db.user.create({
         data: {
           email: req.body.email,
-          password: req.body.password,
+          password: hash,
           posts: req.body.posts,
           phone: req.body.phone,
           firstName: req.body.firstName,
-          lastName:req.body.lastName
+          lastName: req.body.lastName,
         },
       });
 
       logger({ level: "info", message: "New user created successfully" });
       return res.status(201).json(newUser).end();
-      
     } catch (error) {
       logger({ error: error });
       return res.status(500).json({ error: "Internal server error" }).end();
@@ -56,6 +58,7 @@ const userController = {
 
   getUsers: async (req, res) => {
     const users = await _db.user.findMany();
+
     res.json(users)
   },
 };
