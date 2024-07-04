@@ -19,6 +19,7 @@
   "homepage": "https://github.com/de-Padua/foodsys.#readme",
   "dependencies": {
     "@prisma/client": "^5.16.1",
+    "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
     "cypress": "^13.12.0",
