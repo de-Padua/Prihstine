@@ -7,12 +7,15 @@ var bcrypt = require("bcryptjs");
 const userController = {
   createNewUser: async (req, res) => {
     try {
+
+      const jsonBody = JSON.parse(req.text)
+
       const validation = headerValidation(req.headers);
       if (!validation.success) {
         logger({ level: "info", error: validation.type });
         return res.status(parseInt(validation.status)).end();
       }
-      const bodyValidationErrors = bodyValidation(req.body, [
+      const bodyValidationErrors = bodyValidation(jsonBody, [
         "email",
         "password",
         "posts",
@@ -27,7 +30,7 @@ const userController = {
       }
 
       const emailExists = await _db.user.findUnique({
-        where: { email: req.body.email },
+        where: { email: jsonBody.email },
       });
 
       if (emailExists) {
@@ -35,16 +38,16 @@ const userController = {
         return res.status(409).end();
       }
 
-      const hash = bcrypt.hashSync(req.body.password, 4);
+      const hash = bcrypt.hashSync(jsonBody.password, 4);
 
       const newUser = await _db.user.create({
         data: {
-          email: req.body.email,
+          email: jsonBody.email,
           password: hash,
-          posts: req.body.posts,
-          phone: req.body.phone,
-          firstName: req.body.firstName,
-          lastName: req.body.lastName,
+          posts: jsonBody.posts,
+          phone: jsonBody.phone,
+          firstName: jsonBody.firstName,
+          lastName: jsonBody.lastName,
         },
       });
 
@@ -58,8 +61,7 @@ const userController = {
 
   getUsers: async (req, res) => {
     const users = await _db.user.findMany();
-
-    res.json(users)
+    res.json(users);
   },
 };
 

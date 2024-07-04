@@ -3,7 +3,8 @@ const route = app.Router()
 const UserController = require("../controllers/user_controller")
 var bodyParser = require('body-parser')
 var jsonParser = bodyParser.json()
-route.post("/user",jsonParser, UserController.createNewUser)
-route.get("/user",jsonParser, UserController.getUsers)
+
+route.post("/user", UserController.createNewUser)
+route.get("/user", UserController.getUsers)
 
 module.exports = route

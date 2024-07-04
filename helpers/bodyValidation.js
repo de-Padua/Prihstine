@@ -1,5 +1,9 @@
 const bodyValidation = (body, model) => {
+
+  
   const keys = Object.keys(body);
+
+  console.log(body)
 
   let error;
   keys.forEach((element) => {
