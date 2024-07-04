@@ -21,6 +21,7 @@ model User {
   lastName  String
   phone     Int
   posts     Post[]
+  password  String
 }
 
 model Post {

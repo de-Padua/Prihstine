@@ -18,9 +18,6 @@ const logger = async (...actions) => {
     data:actions[0] || []
   };
 
-  
-  console.log(objectToLog);
-
   try {
     //check if directory exists
     if (!fs.existsSync(folderName)) {
