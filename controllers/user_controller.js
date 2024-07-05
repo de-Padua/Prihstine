@@ -26,7 +26,7 @@ const userController = {
 
       if (bodyValidationErrors) {
         logger({ level: "info", error: bodyValidationErrors });
-        return res.status(400).json(bodyValidationErrors).end();
+        return res.status(400).json(logger.error).end();
       }
 
       const emailExists = await _db.user.findUnique({
@@ -57,8 +57,10 @@ const userController = {
       }
     })
 
+    res.cookie('sid',userSession.sessionId, { maxAge: 900000, httpOnly: true })
+
       logger({ level: "info", message: "New user created successfully" });
-      return res.status(201).json(userSession).end();
+      return res.status(201).json(logger.message).end();
     } catch (error) {
       logger({ error: error });
       return res.status(500).json({ error: error.name }).end();
@@ -69,6 +71,8 @@ const userController = {
     const users = await _db.user.findMany();
     res.json(users);
   },
+
+
 };
 
 module.exports = userController;
