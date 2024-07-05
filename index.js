@@ -4,13 +4,19 @@ const getRawBody = require("raw-body");
 const contentType = require('content-type');
 const userRoutes = require("./routes/user");
 const prisma = require("./db/db");
+const cookieParser = require('cookie-parser');
+const cors = require("cors")
 const port = 5678;
 
+app.use(cookieParser());
+
+app.use(userRoutes)
+app.use(cors())
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
 
-// Middleware to process raw body for POST, PUT, DELETE requests
+
 app.use((req, res, next) => {
   if (!['POST', 'PUT', 'DELETE'].includes(req.method)) {
     return next();
@@ -26,13 +32,10 @@ app.use((req, res, next) => {
   });
 });
 
-// Add Prisma to request
 app.use((req, res, next) => {
   req.prisma = prisma;
   next();
 });
 
-// Use routes
-app.use(userRoutes);
 
-// Start the server
+
