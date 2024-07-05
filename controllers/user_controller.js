@@ -49,13 +49,19 @@ const userController = {
           firstName: jsonBody.firstName,
           lastName: jsonBody.lastName,
         },
-      });
+      });   
+ 
+    const userSession = await _db.session.create({
+      data:{
+        userId:newUser.id
+      }
+    })
 
       logger({ level: "info", message: "New user created successfully" });
-      return res.status(201).json(newUser).end();
+      return res.status(201).json(userSession).end();
     } catch (error) {
       logger({ error: error });
-      return res.status(500).json({ error: "Internal server error" }).end();
+      return res.status(500).json({ error: error.name }).end();
     }
   },
 
