@@ -5,7 +5,17 @@ const contentType = require('content-type');
 const userRoutes = require("./routes/user");
 const prisma = require("./db/db");
 const cookieParser = require('cookie-parser');
+const cors = require("cors")
 const port = 5678;
+
+app.use(cookieParser());
+
+app.use(userRoutes);
+app.use(cors())
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
+});
+
 
 app.use((req, res, next) => {
   if (!['POST', 'PUT', 'DELETE'].includes(req.method)) {
@@ -27,9 +37,5 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(userRoutes);
-app.use(cookieParser());
 
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
-});
+
