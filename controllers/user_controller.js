@@ -3,11 +3,15 @@ const logger = require("../helpers/logger");
 const _db = require("../db/db");
 const bodyValidation = require("../helpers/bodyValidation");
 var bcrypt = require("bcryptjs");
-const { ca } = require("date-fns/locale");
+const validateSession = require("../helpers/checkUserSession");
+const getUserById = require("../helpers/getUserById");
 
 const userController = {
   createNewUser: async (req, res) => {
     try {
+
+      console.log("oi")
+
       const jsonBody = req.body;
 
       const validation = headerValidation(req.headers);
@@ -35,7 +39,7 @@ const userController = {
 
       if (emailExists) {
         logger({ level: "info", error: "email already exists" });
-        return res.status(409).json(emailExists).end();
+        return res.status(409).end();
       }
 
       const hash = bcrypt.hashSync(jsonBody.password, 4);
@@ -68,7 +72,7 @@ const userController = {
     } catch (error) {
       logger({ error: error });
 
-      return res.status(500).json({ error }).end();
+      return res.status(500).json(error).end();
     }
   },
 
@@ -89,7 +93,7 @@ const userController = {
       if (!targetUser) {
         logger({ data: "user not found" });
         res.status(404);
-        
+
       }
 
       const nonSensitiveUserData = Object.fromEntries(
@@ -106,6 +110,28 @@ const userController = {
       logger({ data: error.name });
     }
   },
+  getCurrentUserSession : (req,res) =>{
+     const token = req.cookie["sid"]  
+
+     if(!token){
+      logger({data:"invalid user token,session invalid"})
+      res.status(404).json({data:"invalid data"})
+     }
+     const session = validateSession(token)
+
+     if(!session){
+      logger({data:"invalid session"})
+      res.status(401).json({data:"invalid user session,login again"})
+     }
+     
+    const user = getUserById(session.userId)
+
+    if(!user){
+      logger({data:"user doesn't exist"})
+      res.status(401).json({data:"user doesn't exist"})
+    }
+    res.status(206).json({data:user})
+  }
 };
 
 module.exports = userController;
