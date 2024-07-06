@@ -3,6 +3,7 @@ const logger = require("../helpers/logger");
 const _db = require("../db/db");
 const bodyValidation = require("../helpers/bodyValidation");
 var bcrypt = require("bcryptjs");
+const { ca } = require("date-fns/locale");
 
 const userController = {
   createNewUser: async (req, res) => {
@@ -32,7 +33,6 @@ const userController = {
         where: { email: jsonBody.email },
       });
 
-
       if (emailExists) {
         logger({ level: "info", error: "email already exists" });
         return res.status(409).json(emailExists).end();
@@ -52,11 +52,10 @@ const userController = {
             create: {},
           },
         },
-        include:{
-          Session:true
-        }
+        include: {
+          Session: true,
+        },
       });
-      
 
       res.cookie("sid", newUser.Session.sessionId, {
         maxAge: 900000,
@@ -66,18 +65,46 @@ const userController = {
       logger({ level: "info", message: "New user created successfully" });
 
       return res.status(201).json(logger.message).end();
-
     } catch (error) {
       logger({ error: error });
-
 
       return res.status(500).json({ error }).end();
     }
   },
 
   getUser: async (req, res) => {
-    const users = await _db.user.findMany()
-    res.json(users);
+    try {
+      const { userId } = req.params;
+
+      logger({ data: "request to get user field" });
+      const sensitiveUserFields = ["email", "password"];
+
+      const targetUser = await _db.user.findUnique({
+        where: { id: userId },
+        include: {
+          posts: true
+        },
+      });
+
+      if (!targetUser) {
+        logger({ data: "user not found" });
+        res.status(404);
+        
+      }
+
+      const nonSensitiveUserData = Object.fromEntries(
+        Object.entries(targetUser).filter(
+          (item) => !sensitiveUserFields.includes(item[0])
+        )
+      );
+      logger({ data: "filtered user field to non-sensitive data" });
+      res.json(nonSensitiveUserData).status(200);
+
+      logger({ data: "responded succesfuly" });
+    } catch (error) {
+      res.json(error).status(500);
+      logger({ data: error.name });
+    }
   },
 };
 
