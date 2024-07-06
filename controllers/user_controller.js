@@ -77,8 +77,38 @@ const userController = {
   },
 
   getUser: async (req, res) => {
-  const users =  _db.user.findMany()
-  res.json(users)
+    try {
+      const { userId } = req.params;
+
+      logger({ data: "request to get user field" });
+      const sensitiveUserFields = ["email", "password"];
+
+      const targetUser = await _db.user.findUnique({
+        where: { id: userId },
+        include: {
+          posts: true
+        },
+      });
+
+      if (!targetUser) {
+        logger({ data: "user not found" });
+        res.status(404);
+
+      }
+
+      const nonSensitiveUserData = Object.fromEntries(
+        Object.entries(targetUser).filter(
+          (item) => !sensitiveUserFields.includes(item[0])
+        )
+      );
+      logger({ data: "filtered user field to non-sensitive data" });
+      res.json(nonSensitiveUserData).status(200);
+
+      logger({ data: "responded succesfuly" });
+    } catch (error) {
+      res.json(error).status(500);
+      logger({ data: error.name });
+    }
   },
   getCurrentUserSession : (req,res) =>{
      const token = req.cookie["sid"]  
