@@ -5,8 +5,8 @@ node_modules/
 *.log
 
 # Environment variables
-.env
-.env.docker
+*.env
+
 
 # IDE files
 .vscode/
