@@ -101,7 +101,6 @@ const userController = {
       res.status(401).json({data:"user doesn't exist"})
     }
     res.status(206).json({data:user})
-
   }
 };
 
