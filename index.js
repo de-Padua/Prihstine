@@ -9,7 +9,7 @@ const cors = require("cors")
 const port = 5678;
 
 app.use(cookieParser());
-
+app.use(express.json({limit:"1kb"}))
 app.use(userRoutes);
 app.use(cors())
 app.listen(port, () => {
@@ -17,20 +17,7 @@ app.listen(port, () => {
 });
 
 
-app.use((req, res, next) => {
-  if (!['POST', 'PUT', 'DELETE'].includes(req.method)) {
-    return next();
-  }
-  getRawBody(req, {
-    length: req.headers['content-length'],
-    limit: '1kb',
-    encoding: contentType.parse(req).parameters.charset || 'utf-8'
-  }, (err, string) => {
-    if (err) return next(err);
-    req.text = string;
-    next();
-  });
-});
+
 
 app.use((req, res, next) => {
   req.prisma = prisma;
