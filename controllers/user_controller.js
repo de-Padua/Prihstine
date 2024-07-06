@@ -7,8 +7,7 @@ var bcrypt = require("bcryptjs");
 const userController = {
   createNewUser: async (req, res) => {
     try {
-
-      const jsonBody = JSON.parse(req.text)
+      const jsonBody = req.body;
 
       const validation = headerValidation(req.headers);
       if (!validation.success) {
@@ -33,9 +32,10 @@ const userController = {
         where: { email: jsonBody.email },
       });
 
+
       if (emailExists) {
         logger({ level: "info", error: "email already exists" });
-        return res.status(409).end();
+        return res.status(409).json(emailExists).end();
       }
 
       const hash = bcrypt.hashSync(jsonBody.password, 4);
@@ -48,31 +48,37 @@ const userController = {
           phone: jsonBody.phone,
           firstName: jsonBody.firstName,
           lastName: jsonBody.lastName,
+          Session: {
+            create: {},
+          },
         },
-      });   
- 
-    const userSession = await _db.session.create({
-      data:{
-        userId:newUser.id
-      }
-    })
+        include:{
+          Session:true
+        }
+      });
+      
 
-    res.cookie('sid',userSession.sessionId, { maxAge: 900000, httpOnly: true })
+      res.cookie("sid", newUser.Session.sessionId, {
+        maxAge: 900000,
+        httpOnly: true,
+      });
 
       logger({ level: "info", message: "New user created successfully" });
+
       return res.status(201).json(logger.message).end();
+
     } catch (error) {
       logger({ error: error });
-      return res.status(500).json({ error: error.name }).end();
+
+
+      return res.status(500).json({ error }).end();
     }
   },
 
-  getUsers: async (req, res) => {
-    const users = await _db.user.findMany();
+  getUser: async (req, res) => {
+    const users = await _db.user.findMany()
     res.json(users);
   },
-
-
 };
 
 module.exports = userController;
