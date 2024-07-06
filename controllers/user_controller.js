@@ -39,7 +39,7 @@ const userController = {
 
       if (emailExists) {
         logger({ level: "info", error: "email already exists" });
-        return res.status(409).json(emailExists).end();
+        return res.status(409).end();
       }
 
       const hash = bcrypt.hashSync(jsonBody.password, 4);
