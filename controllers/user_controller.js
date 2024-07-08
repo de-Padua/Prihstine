@@ -61,14 +61,15 @@ const userController = {
         },
       });
 
-      res.cookie("sid", newUser.Session.sessionId, {
-        maxAge: 900000,
-        httpOnly: true,
-      });
+      
+      const token = newUser.Session[0].sessionId
 
       logger({ level: "info", message: "New user created successfully" });
-
-      return res.status(201).json(logger.message).end();
+ 
+      return res.status(201).cookie("sid", token, {
+        maxAge: 900000,
+        httpOnly: true,
+      }).json(logger.message).end();
     } catch (error) {
       logger({ error: error });
 
@@ -110,21 +111,21 @@ const userController = {
       logger({ data: error.name });
     }
   },
-  getCurrentUserSession : (req,res) =>{
+  getCurrentUserSession : async (req,res) =>{
      const token = req.cookie["sid"]  
 
      if(!token){
       logger({data:"invalid user token,session invalid"})
-      res.status(404).json({data:"invalid data"})
+      res.json({data:"invalid data"}).status(404)
      }
-     const session = validateSession(token)
+     const session = await validateSession(token)
 
      if(!session){
       logger({data:"invalid session"})
-      res.status(401).json({data:"invalid user session,login again"})
+      res.json({data:"invalid user session,login again"})
      }
      
-    const user = getUserById(session.userId)
+    const user = await getUserById(session.userId)
 
     if(!user){
       logger({data:"user doesn't exist"})
