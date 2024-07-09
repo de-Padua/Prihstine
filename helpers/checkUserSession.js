@@ -1,15 +1,11 @@
 const _db = require("../db/db");
-const checkIfSessionIsValid = (id) => {
-  const session = _db.session.findUnique({
+const checkIfSessionIsValid = async (id) => {
+  const session =  await _db.session.findUnique({
     where: {
-      userId: id,
+      sessionId: id,
     },
   });
-  if (session) {
-    return true;
-  } else {
-    return false;
-  }
+  return session
 };
 
 
