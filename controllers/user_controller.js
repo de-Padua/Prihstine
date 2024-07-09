@@ -112,7 +112,7 @@ const userController = {
     }
   },
   getCurrentUserSession: async (req, res) => {
-    const token = req.cookies["sid"];  // Ensure cookies is plural
+    const token = req.cookies["sid"]; // Ensure cookies is plural
   
     if (!token) {
       logger({ data: "invalid user token, session invalid" });
