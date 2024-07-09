@@ -1,6 +1,6 @@
 const _db = require("../db/db");
-const getUserById = (id) => {
-  const user = _db.user.findUnique({
+const getUserById = async (id) => {
+  const user =  await _db.user.findUnique({
     where: {
       id: id,
     },
