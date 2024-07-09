@@ -126,10 +126,11 @@ const userController = {
     }
   
     const userData = await getUserById(session.userId);
+
     const fieldsToAvoid = ["email", "password"];
     const validatedFields = getNonSensitiveFields(fieldsToAvoid,userData)
 
-    if (!user) {
+    if (!userData) {
       logger({ data: "user doesn't exist" });
       return res.status(401).json({ data: "user doesn't exist" });
     }
