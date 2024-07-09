@@ -5,6 +5,8 @@ const bodyValidation = require("../helpers/bodyValidation");
 var bcrypt = require("bcryptjs");
 const checkUserSession = require("../helpers/checkUserSession");
 const getUserById = require("../helpers/getUserById");
+const getNonSensitiveFields = require("../helpers/getNonSensitiveFileds");
+const { log } = require("console");
 
 const userController = {
   createNewUser: async (req, res) => {
@@ -69,7 +71,7 @@ const userController = {
       return res.status(201).cookie("sid", token, {
         maxAge: 900000,
         httpOnly: true,
-      }).json(logger.message).end();
+      }).end();
     } catch (error) {
       logger({ error: error });
 
@@ -82,7 +84,6 @@ const userController = {
       const { userId } = req.params;
 
       logger({ data: "request to get user field" });
-      const sensitiveUserFields = ["email", "password"];
 
       const targetUser = await _db.user.findUnique({
         where: { id: userId },
@@ -97,11 +98,9 @@ const userController = {
 
       }
 
-      const nonSensitiveUserData = Object.fromEntries(
-        Object.entries(targetUser).filter(
-          (item) => !sensitiveUserFields.includes(item[0])
-        )
-      );
+      const sensitiveUserFields = ["email", "password"];
+      const nonSensitiveUserData = getNonSensitiveFields(sensitiveUserFields,targetUser)
+
       logger({ data: "filtered user field to non-sensitive data" });
       res.json(nonSensitiveUserData).status(200);
 
@@ -112,7 +111,7 @@ const userController = {
     }
   },
   getCurrentUserSession: async (req, res) => {
-    const token = req.cookies["sid"]; // Ensure cookies is plural
+    const token = req.cookies["sid"];
   
     if (!token) {
       logger({ data: "invalid user token, session invalid" });
@@ -126,14 +125,16 @@ const userController = {
       return res.status(401).json({ data: "invalid user session, login again" });
     }
   
-    const user = await getUserById(session.userId);
-  
+    const userData = await getUserById(session.userId);
+    const fieldsToAvoid = ["email", "password"];
+    const validatedFields = getNonSensitiveFields(fieldsToAvoid,userData)
+
     if (!user) {
       logger({ data: "user doesn't exist" });
       return res.status(401).json({ data: "user doesn't exist" });
     }
   
-    res.status(206).json({ data: user });
+    res.status(206).json({ data: validatedFields });
   }
   
 };
