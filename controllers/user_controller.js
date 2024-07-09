@@ -3,7 +3,7 @@ const logger = require("../helpers/logger");
 const _db = require("../db/db");
 const bodyValidation = require("../helpers/bodyValidation");
 var bcrypt = require("bcryptjs");
-const validateSession = require("../helpers/checkUserSession");
+const checkUserSession = require("../helpers/checkUserSession");
 const getUserById = require("../helpers/getUserById");
 
 const userController = {
@@ -111,28 +111,31 @@ const userController = {
       logger({ data: error.name });
     }
   },
-  getCurrentUserSession : async (req,res) =>{
-     const token = req.cookie["sid"]  
-
-     if(!token){
-      logger({data:"invalid user token,session invalid"})
-      res.json({data:"invalid data"}).status(404)
-     }
-     const session = await validateSession(token)
-
-     if(!session){
-      logger({data:"invalid session"})
-      res.json({data:"invalid user session,login again"})
-     }
-     
-    const user = await getUserById(session.userId)
-
-    if(!user){
-      logger({data:"user doesn't exist"})
-      res.status(401).json({data:"user doesn't exist"})
+  getCurrentUserSession: async (req, res) => {
+    const token = req.cookies["sid"];  // Ensure cookies is plural
+  
+    if (!token) {
+      logger({ data: "invalid user token, session invalid" });
+      return res.status(404).json({ data: "invalid data" });
     }
-    res.status(206).json({data:user})
+  
+    const session = await checkUserSession(token);
+  
+    if (!session) {
+      logger({ data: "invalid session" });
+      return res.status(401).json({ data: "invalid user session, login again" });
+    }
+  
+    const user = await getUserById(session.userId);
+  
+    if (!user) {
+      logger({ data: "user doesn't exist" });
+      return res.status(401).json({ data: "user doesn't exist" });
+    }
+  
+    res.status(206).json({ data: user });
   }
+  
 };
 
 module.exports = userController;
