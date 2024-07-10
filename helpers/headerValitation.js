@@ -1,26 +1,11 @@
-const headerValidation = ({ ...args }) => {
-  let result = {
-    status: 200,
-    success: true,
-    type:undefined
-  };
-
+const headerValidation = ({ ...args },res) => {
+ 
   if (args["content-type"] !== "application/json") {
-    result = {
-      status: 406,
-      success: false,
-      type:"content-type unsuported"
-    };
-  } else if (args["content-length"] > 5000) {
-    result = {
-      status: 413,
-      success: false,
-      type:"content-type too long"
-
-    };
+    return res.json("invalid content-type").status(410)
   }
+  
 
-  return result;
+ 
 };
 
 module.exports = headerValidation;
