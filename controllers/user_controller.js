@@ -11,16 +11,8 @@ const { log } = require("console");
 const userController = {
   createNewUser: async (req, res) => {
     try {
-
-      console.log("oi")
-
       const jsonBody = req.body;
-
-      const validation = headerValidation(req.headers);
-      if (!validation.success) {
-        logger({ level: "info", error: validation.type });
-        return res.status(parseInt(validation.status)).end();
-      }
+      
       const bodyValidationErrors = bodyValidation(jsonBody, [
         "email",
         "password",
@@ -61,10 +53,11 @@ const userController = {
         include: {
           Session: true,
         },
+        
       });
 
       
-      const token = newUser.Session[0].sessionId
+      const token = newUser.Session.sessionId
 
       logger({ level: "info", message: "New user created successfully" });
  
