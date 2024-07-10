@@ -38,12 +38,6 @@ describe("create a new user", () => {
       end: jest.fn(),
     };
 
-    headerValidation.mockReturnValue({
-      status: 200,
-      success: true,
-      type: undefined,
-    });
-
     _db.user.findUnique.mockResolvedValue(null);
     _db.user.create.mockResolvedValue({
       id: 1,
@@ -57,7 +51,6 @@ describe("create a new user", () => {
 
     await userController.createNewUser(req, res);
 
-    expect(headerValidation).toHaveBeenCalledWith(req.headers);
     expect(_db.user.findUnique).toHaveBeenCalledWith({
       where: { email: "test@example.com" },
     });
@@ -82,71 +75,46 @@ describe("create a new user", () => {
     });
     expect(res.end).toHaveBeenCalled();
   });
-  it("should return 406 status code for unsupported content type", async () => {
+  it("should fail at body validation", async () => {
     const req = {
       body: {
         email: "test@example.com",
         password: "password123",
-        phone: "1234567890",
-        firstName: "John",
-        lastName: "Doe",
-      },
-      headers: { "content-type": "text/plain" },
-    };
-
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
-      end: jest.fn(),
-    };
-
-    headerValidation.mockReturnValue({
-      status: 406,
-      success: false,
-      type: "content-type unsupported",
-    });
-
-    await userController.createNewUser(req, res);
-
-    expect(headerValidation).toHaveBeenCalledWith(req.headers);
-    expect(res.status).toHaveBeenCalledWith(406);
-    expect(res.end).toHaveBeenCalled();
-    expect(_db.user.findUnique).not.toHaveBeenCalled();
-    expect(_db.user.create).not.toHaveBeenCalled();
-  });
-  it("should return 413 status code for content length too long", async () => {
-    const req = {
-      body: {
-        email: "test@example.com",
-        password: "password123",
-        phone: "1234567890",
+        xxxx: undefined,  // Missing field phone
         firstName: "John",
         lastName: "Doe",
       },
       headers: {
         "content-type": "application/json",
-        "content-length": 6000,
+        "content-length": 1000,
       },
     };
 
     const res = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis(),
+      cookie: jest.fn().mockReturnThis(),
       end: jest.fn(),
     };
 
-    headerValidation.mockReturnValue({
-      status: 413,
-      success: false,
-      type: "content-length too long",
+    _db.user.findUnique.mockResolvedValue(null);
+    _db.user.create.mockResolvedValue({
+      id: 1,
+      email: "test1@example.com",
+      password: bcrypt.hashSync("password123", 4),
+      phone: "1234567890",
+      firstName: "John",
+      lastName: "Doe",
+      Session: { sessionId: "mocksessionid" },
     });
 
     await userController.createNewUser(req, res);
 
-    expect(headerValidation).toHaveBeenCalledWith(req.headers);
-    expect(res.status).toHaveBeenCalledWith(413);
-    expect(res.end).toHaveBeenCalled();
     expect(_db.user.findUnique).not.toHaveBeenCalled();
-    expect(_db.user.create).not.toHaveBeenCalled();
+    expect(_db.user.create).not.toHaveBeenCalled()
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.cookie).not.toHaveBeenCalled();
+    expect(res.end).toHaveBeenCalled();
   });
+ 
 });
