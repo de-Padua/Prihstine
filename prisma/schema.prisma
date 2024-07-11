@@ -15,14 +15,15 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  firstName String
-  lastName  String
-  phone     Int
-  posts     Post[]
-  password  String
-  Session   Session?
+  id         String   @id @default(uuid())
+  email      String   @unique
+  firstName  String
+  lastName   String
+  phone      Int
+  posts      Post[]
+  password   String
+  Session    Session?
+  isVerified Boolean  @default(false)
 }
 
 model Post {
