@@ -7,6 +7,8 @@ const headerValidation = require("./helpers/headerValitation");
 const cors = require("cors");
 const port = 5678;
 
+
+app.set('view engine', 'ejs')
 app.use(cors());
 app.use(cookieParser());
 app.use(express.json({ limit: "1kb" })); // Adjusted limit to 1MB

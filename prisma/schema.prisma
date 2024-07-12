@@ -15,14 +15,16 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  firstName String
-  lastName  String
-  phone     Int
-  posts     Post[]
-  password  String
-  Session   Session?
+  id             String          @id @default(uuid())
+  email          String          @unique
+  firstName      String
+  lastName       String
+  phone          Int
+  posts          Post[]
+  password       String
+  Session        Session?
+  isVerified     Boolean         @default(false)
+  userValidation userValidation?
 }
 
 model Post {
@@ -52,4 +54,13 @@ model Session {
   user      User   @relation(fields: [userId], references: [id])
   userId    String @unique
   sessionId String @id @default(uuid())
+}
+
+model userValidation {
+  id        String   @id @default(uuid())
+  token     String   @unique @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
 }
