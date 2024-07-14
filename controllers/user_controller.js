@@ -1,12 +1,12 @@
-const headerValidation = require("../helpers/headerValitation");
 const logger = require("../helpers/logger");
 const _db = require("../db/db");
 const bodyValidation = require("../helpers/bodyValidation");
-var bcrypt = require("bcryptjs");
 const checkUserSession = require("../helpers/checkUserSession");
 const getUserById = require("../helpers/getUserById");
 const getNonSensitiveFields = require("../helpers/getNonSensitiveFileds");
 const sendMail = require("../helpers/sendEmailNewAccountCreation");
+const createUserAndEmailValidationTransaction = require(".././helpers/createUserAndEmailValidationTransaction");
+
 const userController = {
   createNewUser: async (req, res) => {
     try {
@@ -35,63 +35,25 @@ const userController = {
         return res.status(409).end();
       }
 
-      const hash = bcrypt.hashSync(jsonBody.password, 4);
-      const expiresAt = new Date(Date.now() + 3600000);
-
-      const user = await _db.user.create({
-        data: {
-          email: jsonBody.email,
-          password: hash,
-          posts: jsonBody.posts,
-          phone: jsonBody.phone,
-          firstName: jsonBody.firstName,
-          lastName: jsonBody.lastName,
-          Session: {
-            create: {},
-          },
-          userValidation: {
-            create: {
-              expiresAt: expiresAt,
-            },
-          },
-        },
-        include: {
-          Session: true,
-          userValidation: true,
-        },
-      });
-
-      const token = user.Session.sessionId;
-      const emailToken = user.userValidation.token;
-      const userId = user.id;
-
-      const verificationUrl = `https://${process.env.DEV_HOST}/user/${userId}/verify-email/${emailToken}`;
-
-      console.log(verificationUrl);
-      console.log(user);
-
-      sendMail("newUser", {
-        emailTitle: "Account Verification Required",
-        emailToSend: ["toninhoport@gmail.com"],
-        mainTitle:
-          "Thank you for creating an account with us! Before you can start using your account, please click the link below to activate it:",
-        url: verificationUrl,
-        secundaryTitle:
-          "If you did not sign up for an account with us, please ignore this email. ",
-        buttonText: "Verify my account",
-      });
-
-      return res
-        .status(201)
-        .cookie("sid", token, {
-          maxAge: 900000,
-          httpOnly: true,
-        })
-        .end();
+      try {
+        const user = await createUserAndEmailValidationTransaction(jsonBody);
+        const token = user.Session.sessionId;
+ 
+        console.log(user)
+        return res
+          .status(201)
+          .cookie("sid", token, {
+            maxAge: 900000,
+            httpOnly: true,
+          })
+          .end();
+      } catch (error) {
+        console.error("Failed to create user or send email:", error);
+        return res.status(500).json({ error: error.message }).end();
+      }
     } catch (error) {
       logger({ error: error });
-
-      return res.status(500).json(error).end();
+      return res.status(502).json(error).end();
     }
   },
 
@@ -160,13 +122,17 @@ const userController = {
   verifyEmail: async (req, res) => {
     try {
       const { userId, tokenId } = req.params;
+
       const emailToValidate = await _db.userValidation.findFirst({
         where: {
           userId: userId,
         },
+        include:{
+          user:true
+        }
       });
 
-      if (!emailToValidate) {
+      if (!emailToValidate || emailToValidate.user.isVerified === true) {
         return res.status(404).json("no request peding");
       }
       if (tokenId !== emailToValidate.token) {
@@ -174,7 +140,7 @@ const userController = {
           where: {
             token: tokenId,
           },
-        })
+        });
         return res.status(400).json("token is expired");
       }
 
@@ -187,15 +153,11 @@ const userController = {
         },
       });
 
-      
-      sendMail("email verified", {
-        emailTitle: "Account Verification Successful",
-        emailToSend: ["toninhoport@gmail.com"],
-        mainTitle:
-          "Congratulations! Your email address has been successfully verified.You now have full access to all the features and services we offer.",
+      console.log(verifyUserEmail)
+     await sendMail("notification/verifySucess", {
+        emailToSend: [verifyUserEmail.email],       
         url: undefined,
-        secundaryTitle:
-          "If you did not sign up for an account with us, please ignore this email. "
+         subject: "Account Verification Successful",
       });
 
       res.json(verifyUserEmail);
