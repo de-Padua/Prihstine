@@ -4,8 +4,6 @@ const headerValidation = ({ ...args },res) => {
     return res.status(410).json("invalid content-type")
   }
   
-
- 
 };
 
 module.exports = headerValidation;
