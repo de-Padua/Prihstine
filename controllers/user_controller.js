@@ -15,7 +15,6 @@ const userController = {
       const bodyValidationErrors = bodyValidation(jsonBody, [
         "email",
         "password",
-        "posts",
         "phone",
         "firstName",
         "lastName",
@@ -39,7 +38,6 @@ const userController = {
         const user = await createUserAndEmailValidationTransaction(jsonBody);
         const token = user.Session.sessionId;
  
-        console.log(user)
         return res
           .status(201)
           .cookie("sid", token, {

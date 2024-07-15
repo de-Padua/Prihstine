@@ -88,7 +88,6 @@ describe("create a new user", () => {
       body: {
         email: "test@example.com",
         password: "password123",
-        xxxx: undefined, // Missing field phone
         firstName: "John",
         lastName: "Doe",
       },

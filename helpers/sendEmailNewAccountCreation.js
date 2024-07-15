@@ -26,6 +26,7 @@ const sendMail = async (action, data) => {
   const email = await emailHandler(action, data);
 
   const transporter = nodemailer.createTransport({
+    //etheral for dev
     host: "smtp.ethereal.email",
     port: 587,
     secure: false,
@@ -41,7 +42,7 @@ const sendMail = async (action, data) => {
   }
 
   const info = await transporter.sendMail({
-    from: `"REUBEDO TM" <${process.env.EMAIL_DEV}>`,
+    from: `"Atlantic TM" <${process.env.EMAIL_DEV}>`,
     to: data.emailToSend[0],
     subject: data.subject,
     html: email,
