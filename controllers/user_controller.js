@@ -161,7 +161,7 @@ const userController = {
         subject: "Account Verification Successful",
       });
 
-      res.json(verifyUserEmail);
+      res.status(202).end();
     } catch (err) {
       if (err) {
         res.json(err).status(500);
