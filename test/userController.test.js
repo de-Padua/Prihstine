@@ -7,9 +7,6 @@ const checkUserSession = require("../helpers/checkUserSession");
 const getUserById = require("../helpers/getUserById");
 const getNonSensitiveFields = require("../helpers/getNonSensitiveFileds");
 const { getEnvironmentData } = require("worker_threads");
-jest.mock("../helpers/createUserAndEmailValidationTransaction");
-
-userController.createUserAndEmailValidationTransaction = jest.fn();
 
 jest.mock("../db/db", () => ({
   user: {
@@ -28,17 +25,20 @@ jest.mock("../db/db", () => ({
   },
 }));
 
+jest.mock("../helpers/createUserAndEmailValidationTransaction");
 jest.mock("../helpers/sendEmailNewAccountCreation");
 jest.mock("../helpers/checkUserSession");
 jest.mock("../helpers/getUserById");
-jest.mock("../helpers/getNonSensitiveFileds")
+jest.mock("../helpers/getNonSensitiveFileds");
+
+userController.createUserAndEmailValidationTransaction = jest.fn();
 
 describe("test user controller", () => {
   beforeEach(() => {
     jest.resetAllMocks();
   });
 
-  it("should create a new user and return 201 status code", async () => {
+  it("should create a new user and return 201 status code , createNewUser route", async () => {
     const req = {
       body: {
         email: "test@example.com",
@@ -100,7 +100,7 @@ describe("test user controller", () => {
     });
     expect(res.end).toHaveBeenCalled();
   });
-  it("should fail at body validation", async () => {
+  it("should fail at body validation,createNewUser route", async () => {
     const req = {
       body: {
         email: "test@example.com",
@@ -244,7 +244,6 @@ describe("test user controller", () => {
 
     const fieldsToAvoid = ["email", "password"];
 
-
     const res = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis(),
@@ -264,7 +263,7 @@ describe("test user controller", () => {
       lastName: "de padua",
       phone: 87282151,
       posts: [],
-      password:"sasdasd"
+      password: "sasdasd",
     };
 
     const getNonSensitiveFieldsResponse = {
@@ -273,17 +272,75 @@ describe("test user controller", () => {
       lastName: "de padua",
       phone: 87282151,
       posts: [],
-    }
-  
-    getUserById.mockResolvedValue(getByIdResponse)
+    };
+
+    getUserById.mockResolvedValue(getByIdResponse);
     checkUserSession.mockResolvedValue(dbSessionResponse);
-    getNonSensitiveFields.mockResolvedValue(getNonSensitiveFieldsResponse)
+    getNonSensitiveFields.mockReturnValue(getNonSensitiveFieldsResponse);
 
     await userController.getCurrentUserSession(req, res);
 
     expect(checkUserSession).toHaveBeenCalledWith(req.cookies.sid);
-    expect(getUserById).toHaveBeenCalledWith(dbSessionResponse.userId)
-    expect(getNonSensitiveFields).toHaveBeenCalledWith(fieldsToAvoid,getByIdResponse)
+    expect(getUserById).toHaveBeenCalledWith(dbSessionResponse.userId);
+    expect(getNonSensitiveFields).toHaveBeenCalledWith(
+      fieldsToAvoid,
+      getByIdResponse
+    );
+  });
+  it("should get the user specified on the userId param", async () => {
+    const req = {
+      headers: {
+        "content-type": "application/json",
+        "content-length": 1000,
+      },
+      params: {
+        userId: "52d96a74-d043-481c-9b2f-0661bf0c5cb5",
+      },
+    };
+
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis(),
+      cookie: jest.fn().mockReturnThis(),
+      end: jest.fn(),
+    };
+  
+
+    const sensitiveUserFields = ["email", "password"];
+
+    const findUniqueMockResponse = {
+      id: "52d96a74-d043-481c-9b2f-0661bf0c5cb5",
+      firstName: "Elaine",
+      lastName: "de padua",
+      phone: 87282151,
+      posts: [],
+      password: "somehashedpassword",
+    };
+    const getNonSensitiveFieldsResponse = {
+      id: "52d96a74-d043-481c-9b2f-0661bf0c5cb5",
+      firstName: "Elaine",
+      lastName: "de padua",
+      phone: 87282151,
+      posts: [],
+      
+    };
+
+    _db.user.findUnique.mockResolvedValue(findUniqueMockResponse);
+   getNonSensitiveFields.mockReturnValue(getNonSensitiveFieldsResponse);
+
+    await userController.getUser(req, res);
+
+    expect(_db.user.findUnique).toHaveBeenCalledWith({
+      where: { id: req.params.userId },
+      include: {
+        posts: true,
+      },
+    });
+    expect(getNonSensitiveFields).toHaveBeenCalledWith(sensitiveUserFields,findUniqueMockResponse);
+    expect(res.status).toHaveBeenCalledWith(200)
+    expect(res.json).toHaveBeenCalledWith(getNonSensitiveFieldsResponse)
+    
+   
 
   });
 });
