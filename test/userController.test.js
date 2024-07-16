@@ -3,8 +3,12 @@ const userController = require("../controllers/user_controller");
 const _db = require("../db/db");
 const createUserAndEmailValidationTransaction = require("../helpers/createUserAndEmailValidationTransaction");
 const sendMail = require("../helpers/sendEmailNewAccountCreation");
-
+const checkUserSession = require("../helpers/checkUserSession");
+const getUserById = require("../helpers/getUserById");
+const getNonSensitiveFields = require("../helpers/getNonSensitiveFileds");
+const { getEnvironmentData } = require("worker_threads");
 jest.mock("../helpers/createUserAndEmailValidationTransaction");
+
 userController.createUserAndEmailValidationTransaction = jest.fn();
 
 jest.mock("../db/db", () => ({
@@ -24,7 +28,10 @@ jest.mock("../db/db", () => ({
   },
 }));
 
-jest.mock("../helpers/sendEmailNewAccountCreation")
+jest.mock("../helpers/sendEmailNewAccountCreation");
+jest.mock("../helpers/checkUserSession");
+jest.mock("../helpers/getUserById");
+jest.mock("../helpers/getNonSensitiveFileds")
 
 describe("test user controller", () => {
   beforeEach(() => {
@@ -187,23 +194,25 @@ describe("test user controller", () => {
       },
     };
 
-    sendMail.mockResolvedValue("Mail sent successfully")
-    
+    sendMail.mockResolvedValue("Mail sent successfully");
+
     _db.userValidation.findFirst.mockResolvedValue(
       mockValueUserValidationDataFindFirst
     );
 
-   const updatedUser = await _db.user.update.mockResolvedValue(mockValueUserValidationDataUpdated);
+    const updatedUser = await _db.user.update.mockResolvedValue(
+      mockValueUserValidationDataUpdated
+    );
 
-    await userController.verifyEmail(req,res)
+    await userController.verifyEmail(req, res);
 
     expect(_db.userValidation.findFirst).toHaveBeenCalledWith({
-      where:{
-        userId:req.params.userId
+      where: {
+        userId: req.params.userId,
       },
-      include:{
-        user:true
-      }
+      include: {
+        user: true,
+      },
     });
     expect(_db.user.update).toHaveBeenCalledWith({
       where: {
@@ -215,15 +224,66 @@ describe("test user controller", () => {
     });
 
     expect(sendMail).toHaveBeenCalledWith("notification/verifySucess", {
-        emailToSend: [updatedUser.email],
-        url: undefined,
-        subject: "Account Verification Successful",
-      });
-    expect(res.status).toHaveBeenCalledWith(202)
-    expect(res.end).toHaveBeenCalled()
-    
+      emailToSend: [updatedUser.email],
+      url: undefined,
+      subject: "Account Verification Successful",
+    });
+    expect(res.status).toHaveBeenCalledWith(202);
+    expect(res.end).toHaveBeenCalled();
   });
+  it("should get current user session based on token SID  ", async () => {
+    const req = {
+      headers: {
+        "content-type": "application/json",
+        "content-length": 1000,
+      },
+      cookies: {
+        sid: "sid-cookie",
+      },
+    };
+
+    const fieldsToAvoid = ["email", "password"];
 
 
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis(),
+      cookie: jest.fn().mockReturnThis(),
+      end: jest.fn(),
+    };
 
+    const dbSessionResponse = {
+      userId: "user-id",
+      sessionId: "session-id",
+    };
+
+    const getByIdResponse = {
+      id: "52d96a74-d043-481c-9b2f-0661bf0c5cb5",
+      email: "elaine2@email.com",
+      firstName: "Elaine",
+      lastName: "de padua",
+      phone: 87282151,
+      posts: [],
+      password:"sasdasd"
+    };
+
+    const getNonSensitiveFieldsResponse = {
+      id: "52d96a74-d043-481c-9b2f-0661bf0c5cb5",
+      firstName: "Elaine",
+      lastName: "de padua",
+      phone: 87282151,
+      posts: [],
+    }
+  
+    getUserById.mockResolvedValue(getByIdResponse)
+    checkUserSession.mockResolvedValue(dbSessionResponse);
+    getNonSensitiveFields.mockResolvedValue(getNonSensitiveFieldsResponse)
+
+    await userController.getCurrentUserSession(req, res);
+
+    expect(checkUserSession).toHaveBeenCalledWith(req.cookies.sid);
+    expect(getUserById).toHaveBeenCalledWith(dbSessionResponse.userId)
+    expect(getNonSensitiveFields).toHaveBeenCalledWith(fieldsToAvoid,getByIdResponse)
+
+  });
 });
