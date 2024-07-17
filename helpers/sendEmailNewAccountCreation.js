@@ -16,6 +16,9 @@ const emailHandler = async (action, data) => {
   else if (action === "notification/verifySucess") {
     emailPath = path.join(__dirname, "../views/notifications/verifySucess.ejs");
   }
+  else if (action === "notification/recoveryPassword") {
+    emailPath = path.join(__dirname, "../views/notifications/recoveryPassword.ejs");
+  }
 
   const template = await ejs.renderFile(emailPath, {url:data.url});
   return template;
@@ -47,8 +50,8 @@ const sendMail = async (action, data) => {
     subject: data.subject,
     html: email,
   });
-
-  return info;
+  
+  return info.response;
 };
 
 module.exports = sendMail;

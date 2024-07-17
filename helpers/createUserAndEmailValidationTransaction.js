@@ -1,16 +1,18 @@
-const _db = require(".././db/db");
 var bcrypt = require("bcryptjs");
 const sendMail = require("../helpers/sendEmailNewAccountCreation");
 const prisma = require(".././db/db");
 
 const createUserAndEmailValidationTransaction = async (userData) => {
 
+
+  
   const hash = bcrypt.hashSync(userData.password, 4);
   const expiresAt = new Date(Date.now() + 3600000);
 
+  
   try {
-    return prisma.$transaction(async (_db) => {
-      const user = await _db.user.create({
+    const data =  await prisma.$transaction(async (prisma) => {
+      const user = await prisma.user.create({
         data: {
           email: userData.email,
           password: hash,
@@ -32,6 +34,8 @@ const createUserAndEmailValidationTransaction = async (userData) => {
           userValidation: true,
         },
       });
+
+      console.log(user)
       const emailToken = user.userValidation.token;
       const userId = user.id;
   
@@ -50,6 +54,7 @@ const createUserAndEmailValidationTransaction = async (userData) => {
       }
       return user;
     });
+    return data
   } catch (err) {
     throw new Error(err)
   }

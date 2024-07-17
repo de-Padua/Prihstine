@@ -15,16 +15,17 @@ datasource db {
 }
 
 model User {
-  id             String          @id @default(uuid())
-  email          String          @unique
-  firstName      String
-  lastName       String
-  phone          Int
-  posts          Post[]
-  password       String
-  Session        Session?
-  isVerified     Boolean         @default(false)
-  userValidation userValidation?
+  id                    String                 @id @default(uuid())
+  email                 String                 @unique
+  firstName             String
+  lastName              String
+  phone                 Int
+  posts                 Post[]
+  password              String
+  Session               Session?
+  isVerified            Boolean                @default(false)
+  userValidation        userValidation?
+  passwordChangeSession passwordChangeSession?
 }
 
 model Post {
@@ -57,6 +58,15 @@ model Session {
 }
 
 model userValidation {
+  id        String   @id @default(uuid())
+  token     String   @unique @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
+
+model passwordChangeSession {
   id        String   @id @default(uuid())
   token     String   @unique @default(uuid())
   user      User     @relation(fields: [userId], references: [id])

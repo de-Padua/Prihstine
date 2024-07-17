@@ -1,20 +1,36 @@
 const bcrypt = require("bcryptjs");
-const userController = require("./../controllers/user_controller");
-const _db = require("../db/db");
-const createUserAndEmailValidationTransaction = require(".././helpers/createUserAndEmailValidationTransaction");
+const userController = require("../../controllers/user_controller");
+const prisma = require("../../db/db");
+const createUserAndEmailValidationTransaction = require("../../helpers/createUserAndEmailValidationTransaction");
+const sendMail = require("../../helpers/sendEmailNewAccountCreation");
+const getNonSensitiveFields = require("../../helpers/getNonSensitiveFileds");
 
-
-jest.mock('../helpers/createUserAndEmailValidationTransaction');
-userController.createUserAndEmailValidationTransaction = jest.fn();
-
-jest.mock("../db/db", () => ({
+jest.mock("bcryptjs");
+jest.mock("../../db/db", () => ({
   user: {
     findUnique: jest.fn(),
+    findFirst: jest.fn(),
     create: jest.fn(),
+    delete: jest.fn(),
+    update: jest.fn(),
   },
+  userValidation: {
+    findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    create: jest.fn(),
+    delete: jest.fn(),
+    update: jest.fn(),
+  },
+  $transaction: jest.fn()
 }));
 
-describe("create a new user", () => {
+jest.mock("../../helpers/createUserAndEmailValidationTransaction");
+jest.mock("../../helpers/sendEmailNewAccountCreation");
+jest.mock("../../helpers/checkUserSession");
+jest.mock("../../helpers/getUserById");
+jest.mock("../../helpers/getNonSensitiveFileds");
+
+describe("createNewUser controller", () => {
   beforeEach(() => {
     jest.resetAllMocks();
   });
@@ -54,6 +70,7 @@ describe("create a new user", () => {
         expiresAt: "2024-07-14T22:28:42.959Z",
       },
     };
+
     const res = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis(),
@@ -61,32 +78,29 @@ describe("create a new user", () => {
       end: jest.fn(),
     };
 
-    _db.user.findUnique.mockResolvedValue(null);
-
+    prisma.user.findUnique.mockResolvedValue(null);
     createUserAndEmailValidationTransaction.mockResolvedValue(mockUserData);
 
     await userController.createNewUser(req, res);
-  
 
-    expect(_db.user.findUnique).toHaveBeenCalledWith({
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
       where: { email: "test@example.com" },
     });
 
-    expect(createUserAndEmailValidationTransaction).toHaveBeenCalledWith(
-      req.body
-    );
+    expect(createUserAndEmailValidationTransaction).toHaveBeenCalledWith(req.body);
+
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.cookie).toHaveBeenCalledWith("sid", expect.any(String), {
       maxAge: 900000,
       httpOnly: true,
     });
     expect(res.end).toHaveBeenCalled();
-
   });
+
   it("should fail at body validation", async () => {
     const req = {
       body: {
-        email: "test@example.com",
+        email: "invalid-email",
         password: "password123",
         firstName: "John",
         lastName: "Doe",
@@ -104,23 +118,14 @@ describe("create a new user", () => {
       end: jest.fn(),
     };
 
-    _db.user.findUnique.mockResolvedValue(null);
-    _db.user.create.mockResolvedValue({
-      id: 1,
-      email: "test1@example.com",
-      password: bcrypt.hashSync("password123", 4),
-      phone: "1234567890",
-      firstName: "John",
-      lastName: "Doe",
-      Session: { sessionId: "mocksessionid" },
-    });
-
     await userController.createNewUser(req, res);
 
-    expect(_db.user.findUnique).not.toHaveBeenCalled();
-    expect(_db.user.create).not.toHaveBeenCalled();
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(prisma.user.create).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.cookie).not.toHaveBeenCalled();
     expect(res.end).toHaveBeenCalled();
   });
+
+
 });

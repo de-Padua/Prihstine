@@ -6,6 +6,9 @@ const getUserById = require("../helpers/getUserById");
 const getNonSensitiveFields = require("../helpers/getNonSensitiveFileds");
 const sendMail = require("../helpers/sendEmailNewAccountCreation");
 const createUserAndEmailValidationTransaction = require(".././helpers/createUserAndEmailValidationTransaction");
+const prisma = require("../db/db");
+const { v4: uuidv4, validate: isUUID } = require("uuid");
+const bcrypt = require("bcryptjs");
 
 const userController = {
   createNewUser: async (req, res) => {
@@ -37,7 +40,8 @@ const userController = {
       try {
         const user = await createUserAndEmailValidationTransaction(jsonBody);
         const token = user.Session.sessionId;
- 
+
+
         return res
           .status(201)
           .cookie("sid", token, {
@@ -54,7 +58,6 @@ const userController = {
       return res.status(502).json(error).end();
     }
   },
-
   getUser: async (req, res) => {
     try {
       const { userId } = req.params;
@@ -74,20 +77,23 @@ const userController = {
       }
 
       const sensitiveUserFields = ["email", "password"];
+
       const nonSensitiveUserData = getNonSensitiveFields(
         sensitiveUserFields,
         targetUser
       );
-
+   
       logger({ data: "filtered user field to non-sensitive data" });
-      res.json(nonSensitiveUserData).status(200);
+      
+      res.status(200).json(nonSensitiveUserData);
 
       logger({ data: "responded succesfuly" });
     } catch (error) {
-      res.json(error).status(500);
+      res.status(500).json(error);
       logger({ data: error.name });
     }
   },
+  
   getCurrentUserSession: async (req, res) => {
     const token = req.cookies["sid"];
 
@@ -106,7 +112,6 @@ const userController = {
     }
 
     const userData = await getUserById(session.userId);
-
     const fieldsToAvoid = ["email", "password"];
     const validatedFields = getNonSensitiveFields(fieldsToAvoid, userData);
 
@@ -118,6 +123,7 @@ const userController = {
     res.status(206).json({ data: validatedFields });
   },
   verifyEmail: async (req, res) => {
+    console.log("heere");
     try {
       const { userId, tokenId } = req.params;
 
@@ -125,9 +131,9 @@ const userController = {
         where: {
           userId: userId,
         },
-        include:{
-          user:true
-        }
+        include: {
+          user: true,
+        },
       });
 
       if (!emailToValidate || emailToValidate.user.isVerified === true) {
@@ -151,18 +157,159 @@ const userController = {
         },
       });
 
-      console.log(verifyUserEmail)
-     await sendMail("notification/verifySucess", {
-        emailToSend: [verifyUserEmail.email],       
+      console.log(verifyUserEmail);
+      await sendMail("notification/verifySucess", {
+        emailToSend: [verifyUserEmail.email],
         url: undefined,
-         subject: "Account Verification Successful",
+        subject: "Account Verification Successful",
       });
 
-      res.json(verifyUserEmail);
+      res.status(202).end();
     } catch (err) {
       if (err) {
         res.json(err).status(500);
       }
+    }
+  },
+  createOrUpdatePasswordRecoverySession: async (req, res) => {
+    const { userId } = req.params;
+
+    const expiresAt = new Date(Date.now() + 3600000);
+
+    try {
+      await prisma.$transaction(async (_db) => {
+        //check if there's an active session online
+
+        const existingSession = await _db.passwordChangeSession.findFirst({
+          where: {
+            userId: userId,
+          },
+        });
+
+        let recoverySession;
+        if (existingSession) {
+          // Update the existing session
+          recoverySession = await _db.passwordChangeSession.update({
+            where: {
+              userId: userId,
+            },
+            data: {
+              expiresAt,
+            },
+            include: {
+              user: true,
+            },
+          });
+        } else {
+          // Create a new session
+          recoverySession = await _db.passwordChangeSession.create({
+            data: {
+              userId: userId,
+              expiresAt,
+            },
+            include: {
+              user: true,
+            },
+          });
+        }
+
+        const verificationUrl = `${process.env.DEV_HOST}/user/${userId}/validate-session/${recoverySession.token}`;
+
+        console.log(verificationUrl);
+        await sendMail("notification/recoveryPassword", {
+          emailToSend: [recoverySession.user.email],
+          url: verificationUrl,
+          subject: "Password recovery",
+        });
+      });
+      res.status(200).end();
+    } catch (err) {
+      console.log(err);
+      res.status(500).json({ error: err, data: req.params });
+    }
+  },
+  validateRecoveryPasswordSession: async (req, res) => {
+    console.log("herexxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    const { userId, token } = req.params;
+
+    const now = new Date(Date.now());
+
+    try {
+      //check if there's an active session online
+      const isSessionActive = await _db.passwordChangeSession.findFirst({
+        where: {
+          token: token,
+        },
+        include: {
+          user: true,
+        },
+      });
+
+      if (!isSessionActive) {
+        return res.status(401).end();
+      }
+
+      //check if current token  userid is the same as the url
+
+      if (isSessionActive.user.id !== userId) {
+        return res.status(401).end();
+      }
+
+      // check if session is still valid
+
+      if (now > isSessionActive.expiresAt) {
+        await _db.passwordChangeSession.delete({
+          where: {
+            token: token,
+          },
+        });
+        return res.status(401);
+      }
+
+      return res.status(200).end();
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json(err);
+    }
+  },
+  changeUserPassword: async (req, res) => {
+    const { userId, token } = req.params;
+    
+    const requestData = req.body;
+    try {
+      const data = await _db.passwordChangeSession.findFirst({
+        where: {
+          token: token,
+        },
+        include: {
+          user: true,
+        },
+      });    
+      if (data === null) {
+        return res.status(403).json(data);
+      }
+
+      const hash = bcrypt.hashSync(requestData.password, 4);
+
+      await _db.user.update({
+        where: {
+          id: data.user.id,
+        },
+        data: {
+          password: hash
+        },
+      });
+
+      await _db.passwordChangeSession.delete({
+        where: {
+          userId: userId,
+        },
+      });
+
+     return  res.status(200).end();
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json(error).end();
     }
   },
 };
