@@ -50,8 +50,8 @@ const sendMail = async (action, data) => {
     subject: data.subject,
     html: email,
   });
-
-  return info;
+  
+  return info.response;
 };
 
 module.exports = sendMail;
