@@ -41,6 +41,7 @@ const userController = {
         const user = await createUserAndEmailValidationTransaction(jsonBody);
         const token = user.Session.sessionId;
 
+
         return res
           .status(201)
           .cookie("sid", token, {
@@ -76,20 +77,23 @@ const userController = {
       }
 
       const sensitiveUserFields = ["email", "password"];
+
       const nonSensitiveUserData = getNonSensitiveFields(
         sensitiveUserFields,
         targetUser
       );
-
+   
       logger({ data: "filtered user field to non-sensitive data" });
-      res.json(nonSensitiveUserData).status(200);
+      
+      res.status(200).json(nonSensitiveUserData);
 
       logger({ data: "responded succesfuly" });
     } catch (error) {
-      res.json(error).status(500);
+      res.status(500).json(error);
       logger({ data: error.name });
     }
   },
+  
   getCurrentUserSession: async (req, res) => {
     const token = req.cookies["sid"];
 
@@ -108,7 +112,6 @@ const userController = {
     }
 
     const userData = await getUserById(session.userId);
-
     const fieldsToAvoid = ["email", "password"];
     const validatedFields = getNonSensitiveFields(fieldsToAvoid, userData);
 
