@@ -52,7 +52,7 @@ model Picture {
 }
 
 model Session {
-  user      User   @relation(fields: [userId], references: [id])
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   userId    String @unique
   sessionId String @id @default(uuid())
 }
