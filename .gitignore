@@ -9,4 +9,4 @@ node_modules/
 env.docker
 
 # IDE files
-.vscode/
+.vscode/.env.docker

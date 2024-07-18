@@ -31,11 +31,9 @@ route.get(
 );
 
 // user login
-route.post(
-  "/user/auth/login",
-  UserController.login
-);
+route.post("/user/auth/login", UserController.login);
 
-
+//delete user
+route.post("/user/:userId/delete", UserController.deleteAccount);
 
 module.exports = route;
