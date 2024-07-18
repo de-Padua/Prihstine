@@ -4,6 +4,7 @@ const UserController = require("../controllers/user_controller");
 
 //create user
 route.post("/user", UserController.createNewUser);
+//change password
 route.post(
   "/user/:userId/change-password/:token",
   UserController.changeUserPassword
@@ -29,7 +30,12 @@ route.get(
   UserController.createOrUpdatePasswordRecoverySession
 );
 
-//change user password
+// user login
+route.post(
+  "/user/auth/login",
+  UserController.login
+);
+
 
 
 module.exports = route;

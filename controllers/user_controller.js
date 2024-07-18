@@ -41,7 +41,6 @@ const userController = {
         const user = await createUserAndEmailValidationTransaction(jsonBody);
         const token = user.Session.sessionId;
 
-
         return res
           .status(201)
           .cookie("sid", token, {
@@ -82,9 +81,9 @@ const userController = {
         sensitiveUserFields,
         targetUser
       );
-   
+
       logger({ data: "filtered user field to non-sensitive data" });
-      
+
       res.status(200).json(nonSensitiveUserData);
 
       logger({ data: "responded succesfuly" });
@@ -93,7 +92,7 @@ const userController = {
       logger({ data: error.name });
     }
   },
-  
+
   getCurrentUserSession: async (req, res) => {
     const token = req.cookies["sid"];
 
@@ -274,7 +273,7 @@ const userController = {
   },
   changeUserPassword: async (req, res) => {
     const { userId, token } = req.params;
-    
+
     const requestData = req.body;
     try {
       const data = await _db.passwordChangeSession.findFirst({
@@ -284,7 +283,7 @@ const userController = {
         include: {
           user: true,
         },
-      });    
+      });
       if (data === null) {
         return res.status(403).json(data);
       }
@@ -296,7 +295,7 @@ const userController = {
           id: data.user.id,
         },
         data: {
-          password: hash
+          password: hash,
         },
       });
 
@@ -306,10 +305,59 @@ const userController = {
         },
       });
 
-     return  res.status(200).end();
+      return res.status(200).end();
     } catch (error) {
       console.error(error);
       return res.status(500).json(error).end();
+    }
+  },
+  login: async (req, res) => {
+    const loginCredentials = req.body;
+
+    try {
+      const user = await _db.user.findFirst({
+        where: {
+          email: loginCredentials.email,
+        },
+      });
+
+      if (!user) {
+        return res.status(403).json({ data: "Invalid credentials" });
+      }
+      const loginPassword = loginCredentials.password;
+
+      const comparePasswords = await bcrypt.compare(
+        loginPassword,
+        user.password
+      );
+
+      if (!comparePasswords) {
+        return res.status(404).json({ data: "credentials dont match" }).end();
+      }
+
+      const newSession = await _db.session.update({
+        where: {
+          userId: user.id,
+        },
+        data: {
+          userId: user.id,
+        },
+      });
+
+       if(!newSession){
+        return res.status(500).json({ data: "unable to create new session,try again" }).end();
+
+       }
+      res
+        .status(201)
+        .cookie("sid", newSession.sessionId, {
+          maxAge: 900000,
+          httpOnly: true,
+        })
+        .end();
+    } catch (err) {
+      console.log(err);
+      res.status(500).json({ data: "internal error" });
     }
   },
 };
