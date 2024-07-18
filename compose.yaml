@@ -24,6 +24,7 @@ services:
       - backend-network
     volumes:
       - ./postgres_data:/bitnami/postgresql/data
+    command: ["sh", "-c", "chown -R 1001:1001 /bitnami/postgresql/data && /opt/bitnami/scripts/postgresql/run.sh"]
 
   pgadmin:
     image: dpage/pgadmin4
