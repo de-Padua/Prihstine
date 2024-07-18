@@ -13,6 +13,8 @@ services:
       - backend-network
     depends_on:
       - postgres
+      - redis
+
   postgres:
     image: bitnami/postgresql:latest
     env_file: .env.docker
@@ -30,6 +32,13 @@ services:
       - "80:80"
     depends_on:
       - postgres
+    networks:
+      - backend-network
+
+  redis:
+    image: redis:7.4-rc2-alpine
+    ports:
+      - "9999:9999"
     networks:
       - backend-network
 
