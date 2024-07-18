@@ -228,13 +228,11 @@ const userController = {
     }
   },
   validateRecoveryPasswordSession: async (req, res) => {
-    console.log("herexxxxxxxxxxxxxxxxxxxxxxxxxxx");
     const { userId, token } = req.params;
 
     const now = new Date(Date.now());
 
     try {
-      //check if there's an active session online
       const isSessionActive = await _db.passwordChangeSession.findFirst({
         where: {
           token: token,
@@ -248,13 +246,11 @@ const userController = {
         return res.status(401).end();
       }
 
-      //check if current token  userid is the same as the url
 
       if (isSessionActive.user.id !== userId) {
         return res.status(401).end();
       }
 
-      // check if session is still valid
 
       if (now > isSessionActive.expiresAt) {
         await _db.passwordChangeSession.delete({
@@ -344,10 +340,12 @@ const userController = {
         },
       });
 
-       if(!newSession){
-        return res.status(500).json({ data: "unable to create new session,try again" }).end();
-
-       }
+      if (!newSession) {
+        return res
+          .status(500)
+          .json({ data: "unable to create new session,try again" })
+          .end();
+      }
       res
         .status(201)
         .cookie("sid", newSession.sessionId, {
@@ -358,6 +356,76 @@ const userController = {
     } catch (err) {
       console.log(err);
       res.status(500).json({ data: "internal error" });
+    }
+  },
+  deleteAccount: async (req, res) => {
+    const body = req.body;
+    const { userId } = req.params;
+
+
+
+    try {
+      const requestedUser = await prisma.user.findUnique({
+        where: {
+          id: userId,
+        },
+      });
+
+      if (requestedUser === null) {
+        return res.status(404).end();
+      }
+
+      const comparePasswords = await bcrypt.compare(
+        body.password,
+        requestedUser.password
+      );
+
+      if (!comparePasswords) {
+        return res.status(402).json({ data: "invalid password" });
+      }
+ 
+      console.log(comparePasswords)
+      const transaction = prisma.$transaction(async (prisma) => {
+        const deleteUserValidation = await prisma.userValidation.delete({
+          where: {
+            userId: requestedUser.id,
+          },
+        });
+
+        const deleteSession = await prisma.session.delete({
+          where: {
+            userId: requestedUser.id,
+          },
+        });
+
+
+        const deletePosts = await prisma.post.findMany({
+          where: {
+            userId: requestedUser.id,
+          },
+        });
+
+        for (const post in deletePosts) {
+          await prisma.picture.deleteMany({
+            where: {
+              postPostId: post.postId,
+            },
+          });
+        }
+
+        const deleteAccount = await prisma.user.delete({
+          where: {
+            id: requestedUser.id,
+          },    
+
+        });
+
+        return deleteAccount;
+      });
+
+      return res.status(200).json({ data: transaction });
+    } catch (err) {
+      return res.status(500).json({ data: err });
     }
   },
 };
