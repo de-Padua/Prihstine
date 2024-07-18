@@ -6,9 +6,13 @@ const cookieParser = require("cookie-parser");
 const headerValidation = require("./helpers/headerValitation");
 const { createClient } = require("redis");
 const cors = require("cors");
+const { compare } = require("bcryptjs");
 
 const port = 5678;
-const client = createClient({ url: 'redis://redis:6379' });
+const client = createClient({ url: "redis://redis:6379" });
+
+const requestLimit = 7;
+const expirationTime = 40; // seconds
 
 app.set("trust proxy", true);
 app.set("view engine", "ejs");
@@ -25,26 +29,23 @@ app.use((req, res, next) => {
 
 //redis
 
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
+  try {
+    const url = req.originalUrl;
+    const ip = req.ip;
+    const key = `resource:${url}:userIP:${ip}`;
 
-  const requestLimit = 7
+    const requestCount = Number((await client.get(key)) || 0) + 1;
 
-  const url = req.originalUrl;
-  const ip = req.ip;
-  const key = `resource:${url}:userIP:${ip}`;
-
-  const main = async () => {
-    const requestCount = Number(await client.get(key) || 0)  + 1;
-    
-    if(requestCount <= requestLimit - 1){
-      await client.set(key,requestCount,{EX:40})
-       next()
-    }  
-    else{
-      res.status(429).end()
+    if (requestCount <= requestLimit - 1) {
+      await client.set(key, requestCount, { EX: expirationTime });
+      next();
+    } else {
+      res.status(429).end();
     }
-  };
-  main();
+  } catch (error) {
+    res.status(500).json(error).end();
+  }
 });
 
 app.use((req, res, next) => {
@@ -55,7 +56,6 @@ app.use((req, res, next) => {
 app.use(userRoutes);
 
 const startup = async () => {
-
   await client.connect();
 
   app.listen(port, () => {
@@ -64,4 +64,4 @@ const startup = async () => {
   });
 };
 
-startup()
+startup();
