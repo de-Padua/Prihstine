@@ -10,3 +10,4 @@ env.docker
 
 # IDE files
 .vscode/.env.docker
+package-lock.json
