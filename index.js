@@ -7,6 +7,7 @@ const headerValidation = require("./helpers/headerValitation");
 const { createClient } = require("redis");
 const cors = require("cors");
 const { compare } = require("bcryptjs");
+const postRoute = require("./routes/post")
 
 const port = 5678;
 const client = createClient({ url: "redis://redis:6379" });
@@ -54,6 +55,7 @@ app.use((req, res, next) => {
 });
 
 app.use(userRoutes);
+app.use(postRoute);
 
 const startup = async () => {
   await client.connect();
