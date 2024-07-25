@@ -1,39 +1,26 @@
 const logger = require("../helpers/logger");
 const _db = require("../db/db");
-const bodyValidation = require("../helpers/bodyValidation");
-const checkUserSession = require("../helpers/checkUserSession");
-const getUserById = require("../helpers/getUserById");
+const checkUserSession = require("../queries/user/checkUserSession");
+const getUserById = require("../queries/user/getUserById");
 const getNonSensitiveFields = require("../helpers/getNonSensitiveFileds");
 const sendMail = require("../helpers/sendEmailNewAccountCreation");
 const createUserAndEmailValidationTransaction = require(".././helpers/createUserAndEmailValidationTransaction");
 const prisma = require("../db/db");
 const { v4: uuidv4, validate: isUUID } = require("uuid");
 const bcrypt = require("bcryptjs");
+const updateUserSession = require("../queries/user/updateUserSession");
 
 const userController = {
   createNewUser: async (req, res) => {
     try {
       const jsonBody = req.body;
 
-      const bodyValidationErrors = bodyValidation(jsonBody, [
-        "email",
-        "password",
-        "phone",
-        "firstName",
-        "lastName",
-      ]);
-
-      if (bodyValidationErrors) {
-        logger({ level: "info", error: bodyValidationErrors });
-        return res.status(400).json(logger.error).end();
-      }
 
       const emailExists = await _db.user.findUnique({
         where: { email: jsonBody.email },
       });
 
       if (emailExists) {
-        logger({ level: "info", error: "email already exists" });
         return res.status(409).end();
       }
 
@@ -49,19 +36,15 @@ const userController = {
           })
           .end();
       } catch (error) {
-        console.error("Failed to create user or send email:", error);
         return res.status(500).json({ error: error.message }).end();
       }
     } catch (error) {
-      logger({ error: error });
       return res.status(502).json(error).end();
     }
   },
   getUser: async (req, res) => {
     try {
       const { userId } = req.params;
-
-      logger({ data: "request to get user field" });
 
       const targetUser = await _db.user.findUnique({
         where: { id: userId },
@@ -93,18 +76,17 @@ const userController = {
     }
   },
 
-  getCurrentUserSession: async (req, res) => {
-    const token = req.cookies["sid"];
+  getCurrentUser: async (req, res) => {
 
+    const token = req.cookies["sid"];
+    console.log(token)
     if (!token) {
-      logger({ data: "invalid user token, session invalid" });
       return res.status(404).json({ data: "invalid data" });
     }
 
     const session = await checkUserSession(token);
 
-    if (!session) {
-      logger({ data: "invalid session" });
+    if (session === undefined) {
       return res
         .status(401)
         .json({ data: "invalid user session, login again" });
@@ -115,14 +97,12 @@ const userController = {
     const validatedFields = getNonSensitiveFields(fieldsToAvoid, userData);
 
     if (!userData) {
-      logger({ data: "user doesn't exist" });
       return res.status(401).json({ data: "user doesn't exist" });
     }
-
     res.status(206).json({ data: validatedFields });
   },
   verifyEmail: async (req, res) => {
-    console.log("heere");
+
     try {
       const { userId, tokenId } = req.params;
 
@@ -156,7 +136,6 @@ const userController = {
         },
       });
 
-      console.log(verifyUserEmail);
       await sendMail("notification/verifySucess", {
         emailToSend: [verifyUserEmail.email],
         url: undefined,
@@ -173,7 +152,6 @@ const userController = {
   createOrUpdatePasswordRecoverySession: async (req, res) => {
     const { userId } = req.params;
 
-    const expiresAt = new Date(Date.now() + 3600000);
 
     try {
       await prisma.$transaction(async (_db) => {
@@ -186,8 +164,8 @@ const userController = {
         });
 
         let recoverySession;
+
         if (existingSession) {
-          // Update the existing session
           recoverySession = await _db.passwordChangeSession.update({
             where: {
               userId: userId,
@@ -200,7 +178,6 @@ const userController = {
             },
           });
         } else {
-          // Create a new session
           recoverySession = await _db.passwordChangeSession.create({
             data: {
               userId: userId,
@@ -214,7 +191,6 @@ const userController = {
 
         const verificationUrl = `${process.env.DEV_HOST}/user/${userId}/validate-session/${recoverySession.token}`;
 
-        console.log(verificationUrl);
         await sendMail("notification/recoveryPassword", {
           emailToSend: [recoverySession.user.email],
           url: verificationUrl,
@@ -310,6 +286,7 @@ const userController = {
   login: async (req, res) => {
     const loginCredentials = req.body;
 
+
     try {
       const user = await _db.user.findFirst({
         where: {
@@ -331,14 +308,7 @@ const userController = {
         return res.status(404).json({ data: "credentials dont match" }).end();
       }
 
-      const newSession = await _db.session.update({
-        where: {
-          userId: user.id,
-        },
-        data: {
-          userId: user.id,
-        },
-      });
+      const newSession = await updateUserSession(user.id)
 
       if (!newSession) {
         return res
@@ -349,7 +319,7 @@ const userController = {
       res
         .status(201)
         .cookie("sid", newSession.sessionId, {
-          maxAge: 900000,
+          maxAge: 3600000,
           httpOnly: true,
         })
         .end();
@@ -383,7 +353,7 @@ const userController = {
       if (!comparePasswords) {
         return res.status(402).json({ data: "invalid password" });
       }
- 
+
       console.log(comparePasswords)
       const transaction = prisma.$transaction(async (prisma) => {
         const deleteUserValidation = await prisma.userValidation.delete({
@@ -416,7 +386,7 @@ const userController = {
         const deleteAccount = await prisma.user.delete({
           where: {
             id: requestedUser.id,
-          },    
+          },
 
         });
 
@@ -431,3 +401,4 @@ const userController = {
 };
 
 module.exports = userController;
+
