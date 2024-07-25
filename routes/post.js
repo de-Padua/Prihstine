@@ -1,10 +1,14 @@
 const app = require("express")
 const postController = require("../controllers/post_controller")
+const editPostMiddleware = require("../middlewares/editPostValidation")
+const newPostValidation = require("../middlewares/newPostValidation")
 const route = app.Router()
 
 
-route.post("/post",postController.createPost)
-route.patch("/post",postController.editPost)
+route.get("/post/:postId",postController.getPost)
+route.post("/post",newPostValidation,postController.createPost)
+route.patch("/post/:postId",editPostMiddleware,postController.editPost)
+route.delete("/post/:postId",postController.deletePost)
 
 
 
