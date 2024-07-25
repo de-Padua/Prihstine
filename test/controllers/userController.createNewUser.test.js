@@ -26,8 +26,9 @@ jest.mock("../../db/db", () => ({
 
 jest.mock("../../helpers/createUserAndEmailValidationTransaction");
 jest.mock("../../helpers/sendEmailNewAccountCreation");
-jest.mock("../../helpers/checkUserSession");
-jest.mock("../../helpers/getUserById");
+jest.mock("../../queries/user/checkUserSession");
+jest.mock("../../queries/user/getUserById");
+
 jest.mock("../../helpers/getNonSensitiveFileds");
 
 describe("createNewUser controller", () => {

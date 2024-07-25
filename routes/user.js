@@ -1,39 +1,35 @@
 const app = require("express");
 const route = app.Router();
 const UserController = require("../controllers/user_controller");
+const newUserRequestBodyValidation = require("../middlewares/newUserRequestBodyValidation");
+const changePasswordValidation = require("../middlewares/changePasswordValidation");
+const deleteAccountValidation = require("../middlewares/deleteAccountValidation");
 
-//create user
-route.post("/user", UserController.createNewUser);
-//change password
+route.post("/user", newUserRequestBodyValidation, UserController.createNewUser);
+
 route.post(
-  "/user/:userId/change-password/:token",
+  "/user/:userId/change-password/:token", changePasswordValidation,
   UserController.changeUserPassword
 );
-//get user based on id
+
 route.get("/user/:userId", UserController.getUser);
 
-//validates recovery password session
 route.get(
   "/user/:userId/validate-session/:token",
   UserController.validateRecoveryPasswordSession
 );
 
-//validates user session based on cookie
-route.get("/user/session/validate", UserController.getCurrentUserSession);
+route.get("/user/session/validate", UserController.getCurrentUser);
 
-//validates user email
-route.get("/user/:userId/verify-email/:tokenId", UserController.verifyEmail);
+route.post("/user/:userId/verify-email/:tokenId", UserController.verifyEmail);
 
-//create session for password recovery
 route.get(
   "/user/:userId/recovery-password",
   UserController.createOrUpdatePasswordRecoverySession
 );
-
-// user login
 route.post("/user/auth/login", UserController.login);
 
-//delete user
-route.post("/user/:userId/delete", UserController.deleteAccount);
+route.delete("/user/:userId/delete", deleteAccountValidation
+  , UserController.deleteAccount);
 
 module.exports = route;

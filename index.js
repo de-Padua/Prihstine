@@ -3,50 +3,26 @@ const app = express();
 const userRoutes = require("./routes/user");
 const prisma = require("./db/db");
 const cookieParser = require("cookie-parser");
-const headerValidation = require("./helpers/headerValitation");
 const { createClient } = require("redis");
 const cors = require("cors");
-const { compare } = require("bcryptjs");
-const postRoute = require("./routes/post")
+const postRoute = require("./routes/post");
+const rateLimiteMiddleware = require("./middlewares/rateLimitMiddleware");
+const headerValidationMiddleware = require("./middlewares/headerValidationMiddleware");
 
-const port = 5678;
+
+
+
 const client = createClient({ url: "redis://redis:6379" });
 
-const requestLimit = 7;
-const expirationTime = 40; // seconds
-
-app.set("trust proxy", true);
-app.set("view engine", "ejs");
-app.use(cors());
-app.use(cookieParser());
-app.use(express.json({ limit: "1kb" })); // Adjusted limit to 1MB
-app.use((req, res, next) => {
-  if (req.method !== "POST") {
-    return next();
-  }
-  headerValidation(req.headers, res);
-  next();
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send("Something broke!");
 });
 
-//redis
+app.use((req, res, next) => headerValidationMiddleware(req,res,next) );
 
 app.use(async (req, res, next) => {
-  try {
-    const url = req.originalUrl;
-    const ip = req.ip;
-    const key = `resource:${url}:userIP:${ip}`;
-
-    const requestCount = Number((await client.get(key)) || 0) + 1;
-
-    if (requestCount <= requestLimit - 1) {
-      await client.set(key, requestCount, { EX: expirationTime });
-      next();
-    } else {
-      res.status(429).end();
-    }
-  } catch (error) {
-    res.status(500).json(error).end();
-  }
+ return rateLimiteMiddleware(client,req,res,next)
 });
 
 app.use((req, res, next) => {
@@ -54,9 +30,23 @@ app.use((req, res, next) => {
   next();
 });
 
+
+app.set("trust proxy", true);
+app.set("view engine", "ejs");
+
+
+app.use(cors());
+app.use(cookieParser());
+app.use(express.json({ limit: "1kb" })); // Adjusted limit to 1MB
+
 app.use(userRoutes);
 app.use(postRoute);
 
+
+
+
+
+const port = 5678;
 const startup = async () => {
   await client.connect();
 

@@ -1,6 +1,6 @@
-const _db = require("../db/db");
+const prisma = require("../../db/db");
 const getUserById = async (id) => {
-  const user =  await _db.user.findUnique({
+  const user =  await prisma.user.findUnique({
     where: {
       id: id,
     },

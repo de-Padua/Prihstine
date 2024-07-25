@@ -19,7 +19,7 @@ model User {
   email                 String                 @unique
   firstName             String
   lastName              String
-  phone                 Int
+  phone                 String
   posts                 Post[]
   password              String
   Session               Session?
@@ -36,7 +36,7 @@ model Post {
   postDescrition     String
   postValue          Int
   updatedAt          DateTime  @default(now()) @updatedAt
-  adress             String
+  address            String
   state              String
   cep                String
   sizeInSquareMeters String
@@ -45,7 +45,7 @@ model Post {
 }
 
 model Picture {
-  post       Post   @relation(fields: [postPostId], references: [postId])
+  post       Post   @relation(fields: [postPostId], references: [postId],onDelete: Cascade, onUpdate: Cascade)
   postPostId String
   pictureId  String @id @default(uuid())
   pictureUrl String
@@ -55,12 +55,15 @@ model Session {
   user      User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   userId    String @unique
   sessionId String @id @default(uuid())
+  expiresAt DateTime 
+  createdAt DateTime @default(now())
+
 }
 
 model userValidation {
   id        String   @id @default(uuid())
   token     String   @unique @default(uuid())
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id] ,onDelete: Cascade, onUpdate: Cascade)
   userId    String   @unique
   createdAt DateTime @default(now())
   expiresAt DateTime
@@ -69,7 +72,7 @@ model userValidation {
 model passwordChangeSession {
   id        String   @id @default(uuid())
   token     String   @unique @default(uuid())
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id] ,onDelete: Cascade, onUpdate: Cascade)
   userId    String   @unique
   createdAt DateTime @default(now())
   expiresAt DateTime
