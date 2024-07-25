@@ -1,8 +1,8 @@
 const userController = require("../../controllers/user_controller");
 const getNonSensitiveFields = require("../../helpers/getNonSensitiveFileds");
 const _db = require("../../db/db");
-const checkUserSession = require("../../helpers/checkUserSession");
-const getUserById = require("../../helpers/getUserById");
+const checkUserSession = require("../../queries/user/checkUserSession");
+const getUserById = require("../../queries/user/getUserById");
 
 jest.mock("../../db/db", () => ({
   user: {
@@ -21,8 +21,8 @@ jest.mock("../../db/db", () => ({
   },
 }));
 
-jest.mock("../../helpers/checkUserSession");
-jest.mock("../../helpers/getUserById");
+jest.mock("../../queries/user/checkUserSession");
+jest.mock("../../queries/user/getUserById");
 jest.mock("../../helpers/getNonSensitiveFileds");
 
 

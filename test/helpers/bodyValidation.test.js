@@ -1,4 +1,4 @@
-const bodyValidation = require("../../helpers/bodyValidation");
+const bodyValidation = require("../../middlewares/newUserRequestBodyValidation");
 
 describe("should validate every element on the body", () => {
   it("should recive an undefined,which mean it is a valid body",  () => {

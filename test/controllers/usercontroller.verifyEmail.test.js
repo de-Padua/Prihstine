@@ -23,7 +23,7 @@ jest.mock("../../db/db", () => ({
 
 jest.mock("../../helpers/createUserAndEmailValidationTransaction");
 jest.mock("../../helpers/sendEmailNewAccountCreation");
-jest.mock("../../helpers/checkUserSession");
+jest.mock("../../queries/user/checkUserSession");
 jest.mock("../../helpers/getNonSensitiveFileds");
 
 
