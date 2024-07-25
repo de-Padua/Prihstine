@@ -15,7 +15,6 @@ const userController = {
     try {
       const jsonBody = req.body;
 
-
       const emailExists = await _db.user.findUnique({
         where: { email: jsonBody.email },
       });
@@ -354,7 +353,6 @@ const userController = {
         return res.status(402).json({ data: "invalid password" });
       }
 
-      console.log(comparePasswords)
       const transaction = prisma.$transaction(async (prisma) => {
         const deleteUserValidation = await prisma.userValidation.delete({
           where: {
