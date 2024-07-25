@@ -21,7 +21,9 @@ const createUserAndEmailValidationTransaction = async (userData) => {
           firstName: userData.firstName,
           lastName: userData.lastName,
           Session: {
-            create: {},
+            create: {
+              expiresAt: expiresAt,
+            },
           },
           userValidation: {
             create: {
