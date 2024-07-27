@@ -4,11 +4,18 @@ const UserController = require("../controllers/user_controller");
 const newUserRequestBodyValidation = require("../middlewares/newUserRequestBodyValidation");
 const changePasswordValidation = require("../middlewares/changePasswordValidation");
 const deleteAccountValidation = require("../middlewares/deleteAccountValidation");
+const editUserDataValidation = require("../middlewares/editUserDataValidation");
 
 route.post("/user", newUserRequestBodyValidation, UserController.createNewUser);
+route.patch(
+  "/user",
+  editUserDataValidation,
+  UserController.editUserDetails
+);
 
 route.post(
-  "/user/:userId/change-password/:token", changePasswordValidation,
+  "/user/:userId/change-password/:token",
+  changePasswordValidation,
   UserController.changeUserPassword
 );
 
@@ -29,7 +36,10 @@ route.get(
 );
 route.post("/user/auth/login", UserController.login);
 
-route.delete("/user/:userId/delete", deleteAccountValidation
-  , UserController.deleteAccount);
+route.delete(
+  "/user/:userId/delete",
+  deleteAccountValidation,
+  UserController.deleteAccount
+);
 
 module.exports = route;
