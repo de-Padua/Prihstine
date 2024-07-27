@@ -6,9 +6,9 @@ const getNonSensitiveFields = require("../helpers/getNonSensitiveFileds");
 const sendMail = require("../helpers/sendEmailNewAccountCreation");
 const createUserAndEmailValidationTransaction = require(".././helpers/createUserAndEmailValidationTransaction");
 const prisma = require("../db/db");
-const { v4: uuidv4, validate: isUUID } = require("uuid");
 const bcrypt = require("bcryptjs");
 const updateUserSession = require("../queries/user/updateUserSession");
+const updateUserData = require("../queries/user/updateUserData");
 
 const userController = {
   createNewUser: async (req, res) => {
@@ -76,9 +76,8 @@ const userController = {
   },
 
   getCurrentUser: async (req, res) => {
-
     const token = req.cookies["sid"];
-    console.log(token)
+    console.log(token);
     if (!token) {
       return res.status(404).json({ data: "invalid data" });
     }
@@ -101,7 +100,6 @@ const userController = {
     res.status(206).json({ data: validatedFields });
   },
   verifyEmail: async (req, res) => {
-
     try {
       const { userId, tokenId } = req.params;
 
@@ -151,11 +149,8 @@ const userController = {
   createOrUpdatePasswordRecoverySession: async (req, res) => {
     const { userId } = req.params;
 
-
     try {
       await prisma.$transaction(async (_db) => {
-        //check if there's an active session online
-
         const existingSession = await _db.passwordChangeSession.findFirst({
           where: {
             userId: userId,
@@ -221,11 +216,9 @@ const userController = {
         return res.status(401).end();
       }
 
-
       if (isSessionActive.user.id !== userId) {
         return res.status(401).end();
       }
-
 
       if (now > isSessionActive.expiresAt) {
         await _db.passwordChangeSession.delete({
@@ -285,7 +278,6 @@ const userController = {
   login: async (req, res) => {
     const loginCredentials = req.body;
 
-
     try {
       const user = await _db.user.findFirst({
         where: {
@@ -307,7 +299,7 @@ const userController = {
         return res.status(404).json({ data: "credentials dont match" }).end();
       }
 
-      const newSession = await updateUserSession(user.id)
+      const newSession = await updateUserSession(user.id);
 
       if (!newSession) {
         return res
@@ -330,8 +322,6 @@ const userController = {
   deleteAccount: async (req, res) => {
     const body = req.body;
     const { userId } = req.params;
-
-
 
     try {
       const requestedUser = await prisma.user.findUnique({
@@ -366,7 +356,6 @@ const userController = {
           },
         });
 
-
         const deletePosts = await prisma.post.findMany({
           where: {
             userId: requestedUser.id,
@@ -385,7 +374,6 @@ const userController = {
           where: {
             id: requestedUser.id,
           },
-
         });
 
         return deleteAccount;
@@ -396,7 +384,35 @@ const userController = {
       return res.status(500).json({ data: err });
     }
   },
+  editUserDetails: async (req, res) => {
+    const token = req.cookies["sid"];
+    const body = req.body;
+    if (!token) {
+      return res.status(404).json({ data: "invalid data" });
+    }
+
+    try {
+      const session = await checkUserSession(token);
+
+      if (session === undefined) {
+        return res
+          .status(401)
+          .json({ data: "invalid user session, login again" });
+      }
+
+      const updatedUserData = updateUserData(session.userId, body);
+
+      if (!updateUserData) {
+        return res
+          .status(500)
+          .json({ data: "Something went wrong,try again " });
+      }
+
+      return res.status(200).json(updatedUserData);
+    } catch (error) {
+      return res.status(500).json(error);
+    }
+  },
 };
 
 module.exports = userController;
-
