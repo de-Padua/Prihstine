@@ -28,25 +28,38 @@ model User {
   passwordChangeSession passwordChangeSession?
 }
 
-model Post {
-  user               User      @relation(fields: [userId], references: [id],onDelete: Cascade, onUpdate: Cascade)
+model Post {  
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   userId             String
   postId             String    @id @default(uuid())
+  ULID               String
   postTitle          String
-  postDescrition     String
+  postDescription    String
   postValue          Int
   updatedAt          DateTime  @default(now()) @updatedAt
-  address            String
-  state              String
-  cep                String
   sizeInSquareMeters String
   isClosed           Boolean   @default(false)
   pictures           Picture[]
+  address            Address?
 }
 
+model Address {
+  post       Post       @relation(fields: [postId], references: [postId],onDelete: Cascade, onUpdate: Cascade)
+  postId     String     @unique
+  id  String @id @default(uuid())
+  cep String
+  logradouro String?
+  complemento String?
+  unidade String?
+  bairro String?
+  localidade String?
+  uf String?
+  ibge String?
+  ddd String?
+}
 model Picture {
-  post       Post   @relation(fields: [postPostId], references: [postId],onDelete: Cascade, onUpdate: Cascade)
-  postPostId String
+  post       Post   @relation(fields: [postId], references: [postId],onDelete: Cascade, onUpdate: Cascade)
+  postId String
   pictureId  String @id @default(uuid())
   pictureUrl String
 }
