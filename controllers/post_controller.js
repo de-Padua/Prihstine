@@ -1,15 +1,13 @@
 const prisma = require("../db/db");
-const bodyValidation = require("../middlewares/newUserRequestBodyValidation");
 const checkUserSession = require("../queries/user/checkUserSession");
 const createPostQuerie = require("../queries/post/createPost");
 const updatePost = require("../queries/post/updatePost");
 const getPost = require("../queries/post/getPostById");
-const getNonSensitiveFields = require("../helpers/getNonSensitiveFileds");
+
 
 const postController = {
   getPost: async (req, res) => {
     try {
-      const sensitiveUserFields = ["email", "password"];
 
       const postId = req.params["postId"];
       const post = await getPost(postId);
@@ -18,14 +16,8 @@ const postController = {
         res.status(404).json({ data: "post not found" });
       }
 
-      const nonSensitiveFields = getNonSensitiveFields(
-        sensitiveUserFields,
-        post.user
-      );
-
-      const postNonSensitiveData = { ...post, user: nonSensitiveFields };
-
-      return res.status(200).json({ data: postNonSensitiveData });
+      console.log(post);
+      return res.status(200).json({ data: post });
     } catch (ex) {
       res.status(503).json(ex);
     }
@@ -118,6 +110,62 @@ const postController = {
     } catch (error) {
       console.error("Error updating post:", error);
       return res.status(500).json({ error: "Internal server error." });
+    }
+  },
+  getPosts: async (req, res) => {
+    const minValue = Number(req.query.min) || undefined;
+    const maxValue = Number(req.query.max) || undefined;
+    const state = req.query.state ? req.query.state.toUpperCase() : undefined
+    const place = req.query.place ? req.query.place.toLowerCase() : undefined
+
+    try {
+      const currentPage = req.params["page"];
+      const total = await prisma.post.count();
+      const pages = Math.ceil(total / 10);
+
+      const posts = await prisma.post.findMany({
+        take: 10,
+        skip: Number(currentPage) * 10,
+
+        include: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+          address: true,
+        },
+        where: {
+          postValue: {
+            gte: minValue,
+            lte: maxValue,
+          },
+          AND: {
+            address: {
+              uf: {
+                equals: state,
+              },
+              localidade:{
+                equals:place
+              }
+            },
+
+          },
+        },
+      });
+
+       console.log(req.query)
+      res.status(200).json({
+        data: {
+          currentPage: currentPage,
+          pageContent: posts,
+        },
+        pages: pages,
+      });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json(err);
     }
   },
 };
