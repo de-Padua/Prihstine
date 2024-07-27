@@ -9,6 +9,7 @@ route.get("/post/:postId",postController.getPost)
 route.post("/post",newPostValidation,postController.createPost)
 route.patch("/post/:postId",editPostMiddleware,postController.editPost)
 route.delete("/post/:postId",postController.deletePost)
+route.get("/posts/:page",postController.getPosts)
 
 
 

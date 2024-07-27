@@ -36,12 +36,14 @@
     "pg-hstore": "^2.3.4",
     "raw-body": "^2.5.2",
     "redis": "^4.6.15",
+    "ulid": "^2.3.0",
     "uuid": "^10.0.0",
     "yup": "^1.4.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.9",
     "jest": "^29.7.0",
+    "prettier-plugin-prisma": "^5.0.0",
     "prisma": "^5.16.1",
     "sequelize-cli": "^6.6.2",
     "ts-node": "^10.9.2",
