@@ -1,19 +1,28 @@
-const prisma = require("../../db/db")
+const prisma = require("../../db/db");
 
 const getPost = async (postId) => {
-
   const post = await prisma.post.findFirst({
     where: {
-      postId: postId
-    }, include: {
-      user: true
-    }
-  })
+      postId: postId,
+    },
+    include: {
+      
+      user: {
+        select:{
+          firstName:true,
+          lastName:true,  
+          id:true,
+          phone:true,
+              
+        }
+      },
+      address: true,
+     
+    },
+    
+  });
 
+  return post;
+};
 
-  return post
-}
-
-
-
-module.exports = getPost
+module.exports = getPost;
